@@ -1,5 +1,5 @@
 import pool from '../config/database.js';
-import * as gemini from '../services/geminiService.js';
+import * as grok from '../services/grokService.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // POST /api/portfolio/generate
@@ -28,7 +28,7 @@ const generatePortfolio = async (req, res) => {
     }
 
     // Whether AI key is configured
-    const hasAIGeminiKey = Boolean(process.env.GEMINI_API_KEY);
+    const hasAIGrokKey = Boolean(process.env.GROK_API_KEY);
 
     // Extract skills
     let skills = [];
@@ -46,13 +46,13 @@ const generatePortfolio = async (req, res) => {
 
     // Generate AI bio
     const cvText = resume?.raw_text || `Developer ${user.name} with GitHub profile ${github?.github_username}`;
-    // Call Gemini helpers but tolerate failures (quota/errors) and fall back to defaults
+    // Call Grok helpers but tolerate failures (quota/errors) and fall back to defaults
     let aiBio;
     let skillGap;
     let interviewQuestions;
     let aiProduced = true;
     try {
-      aiBio = await gemini.generateBio(cvText, user.name);
+      aiBio = await grok.generateBio(cvText, user.name);
     } catch (e) {
       console.error('AI bio error:', e);
       aiProduced = false;
@@ -60,7 +60,7 @@ const generatePortfolio = async (req, res) => {
     }
 
     try {
-      skillGap = await gemini.generateSkillGapAnalysis(skills);
+      skillGap = await grok.generateSkillGapAnalysis(skills);
     } catch (e) {
       console.error('AI skill gap error:', e);
       aiProduced = false;
@@ -68,7 +68,7 @@ const generatePortfolio = async (req, res) => {
     }
 
     try {
-      interviewQuestions = await gemini.generateInterviewQuestions(skills, cvText);
+      interviewQuestions = await grok.generateInterviewQuestions(skills, cvText);
     } catch (e) {
       console.error('AI interview questions error:', e);
       aiProduced = false;
@@ -87,7 +87,7 @@ const generatePortfolio = async (req, res) => {
     const portfolioData = { skills, projects: projects.length, bio: aiBio, github: !!github, resume: !!resume };
     let scoreData;
     try {
-      scoreData = await gemini.generatePortfolioScore(portfolioData);
+      scoreData = await grok.generatePortfolioScore(portfolioData);
     } catch (e) {
       console.error('AI portfolio score error:', e);
       aiProduced = false;
@@ -142,7 +142,7 @@ const generatePortfolio = async (req, res) => {
       ]
     );
 
-    const aiAvailable = hasAIGeminiKey && aiProduced;
+    const aiAvailable = hasAIGrokKey && aiProduced;
 
     res.json({
       portfolio,
@@ -172,7 +172,7 @@ const getPortfolio = async (req, res) => {
       [req.user.id]
     );
 
-    const aiAvailable = Boolean(process.env.GEMINI_API_KEY);
+    const aiAvailable = Boolean(process.env.GROK_API_KEY);
 
     res.json({ portfolio, projects: projects.rows, assessment: assessment.rows[0] || null, aiAvailable });
   } catch (err) {

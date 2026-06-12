@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import pdfParse from 'pdf-parse';
 import pool from '../config/database.js';
-import * as gemini from '../services/geminiService.js';
+import * as grok from '../services/grokService.js';
 
 // Extract skills from CV text
 const extractSkills = (text) => {
@@ -36,7 +36,7 @@ const uploadResume = async (req, res) => {
     // AI feedback
     let feedback;
     try {
-      feedback = await gemini.generateResumeFeedback(rawText);
+      feedback = await grok.generateResumeFeedback(rawText);
     } catch (feedbackError) {
       console.error('Resume feedback error:', feedbackError);
       feedback = {

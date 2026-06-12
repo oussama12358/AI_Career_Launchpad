@@ -1,6 +1,6 @@
 import pool from '../config/database.js';
 import { fetchGitHubProfile } from '../services/githubService.js';
-import * as gemini from '../services/geminiService.js';
+import * as grok from '../services/grokService.js';
 
 // POST /api/github/connect
 const connectGitHub = async (req, res) => {
@@ -38,7 +38,7 @@ const connectGitHub = async (req, res) => {
         let aiDesc = repo.description || '';
         if (repo.stargazers_count > 0 || nonForkRepos.indexOf(repo) < 3) {
           try {
-            aiDesc = await gemini.generateProjectDescription(
+            aiDesc = await grok.generateProjectDescription(
               repo.name,
               [repo.language, ...(repo.topics || [])].filter(Boolean),
               repo.description || ''

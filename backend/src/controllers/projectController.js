@@ -1,5 +1,5 @@
 import pool from '../config/database.js';
-import * as gemini from '../services/geminiService.js';
+import * as grok from '../services/grokService.js';
 
 // GET /api/projects
 const getProjects = async (req, res) => {
@@ -20,7 +20,7 @@ const createProject = async (req, res) => {
   if (!name) return res.status(400).json({ error: 'Project name required' });
 
   try {
-    const aiDesc = await gemini.generateProjectDescription(name, tech_stack || [], description || '');
+    const aiDesc = await grok.generateProjectDescription(name, tech_stack || [], description || '');
 
     const result = await pool.query(
       `INSERT INTO projects (user_id, name, description, ai_description, tech_stack, github_url, live_url, source)
@@ -54,7 +54,7 @@ const regenerateDescription = async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: 'Project not found' });
 
     const project = result.rows[0];
-    const aiDesc = await gemini.generateProjectDescription(
+    const aiDesc = await grok.generateProjectDescription(
       project.name,
       project.tech_stack || [],
       project.description || ''
