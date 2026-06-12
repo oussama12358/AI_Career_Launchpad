@@ -1,15 +1,14 @@
 # AI Career Launchpad
-This repository contains the backend API for AI Career Launchpad.
+This repository contains the full-stack AI Career Launchpad project (backend API + Next.js frontend).
 
 ## Notes
-- This repo includes backend code only.
-- The frontend is not included here.
-- Use this repo to run the Express API, database schema, and AI / GitHub integrations.
+- This repo includes both the backend API and the frontend Next.js app.
+- Use this repo to run the Express API, database schema, frontend app, and AI / GitHub integrations.
 
 ## Features
 
 - **User Authentication** — JWT-based register/login
-- **CV Upload & Analysis** — PDF parsing + AI feedback & scoring via Gemini
+- **CV Upload & Analysis** — PDF parsing + AI feedback & scoring via Grok
 - **GitHub Integration** — Auto-import projects with AI-generated descriptions
 - **Portfolio Generation** — AI-built portfolio
 - **Skills Dashboard** — Detect skills from your CV and GitHub
@@ -21,10 +20,17 @@ This repository contains the backend API for AI Career Launchpad.
 |-------|-----------|
 | Backend | Node.js, Express.js |
 | Database | PostgreSQL |
-| AI | Google Gemini 2.0 Flash (free API) |
+| AI | Grok AI |
 | Auth | JWT |
 
 ---
+
+## Frontend
+
+- Framework: Next.js 16 (React)
+- Styling: Tailwind CSS
+- Frontend communicates with backend via `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:5000/api`)
+
 
 ## Setup Instructions
 
@@ -32,7 +38,7 @@ This repository contains the backend API for AI Career Launchpad.
 
 - Node.js 18+
 - PostgreSQL 14+
-- Gemini API Key (free at [aistudio.google.com](https://aistudio.google.com))
+- Grok API Key (obtain from your Grok provider)
 
 ---
 
@@ -62,7 +68,7 @@ cp .env.example .env
 # Edit .env and fill in your values:
 #   DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/ai_career_launchpad
 #   JWT_SECRET=your_random_secret_here
-#   GEMINI_API_KEY=your_gemini_api_key_here
+#   GROK_API_KEY=your_grok_api_key_here
 
 # Start development server
 npm run dev
@@ -71,12 +77,44 @@ npm run dev
 
 ---
 
-## Getting a Gemini API Key
+### Frontend Setup
 
-1. Go to [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
-2. Sign in with your Google account
-3. Click **"Create API Key"**
-4. Copy the key and paste it into `backend/.env` as `GEMINI_API_KEY`
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Create environment file for Next.js (optional)
+# Create a file named `.env.local` in the `frontend` folder and add:
+#   NEXT_PUBLIC_API_URL=http://localhost:5000/api
+
+# Start frontend dev server
+npm run dev
+# Frontend runs on http://localhost:3000
+```
+
+### Running Backend + Frontend Locally
+
+Open two terminals and run the backend and frontend servers:
+
+```bash
+# Terminal 1 - backend
+cd backend
+npm run dev
+
+# Terminal 2 - frontend
+cd frontend
+npm run dev
+```
+
+When both are running, the frontend will call the backend at `http://localhost:5000/api` by default. Adjust `NEXT_PUBLIC_API_URL` if your backend runs elsewhere.
+
+
+## Getting a Grok API Key
+
+1. Obtain a Grok API key from your Grok provider or account dashboard.
+2. Copy the key and paste it into `backend/.env` as `GROK_API_KEY`
 
 ---
 
@@ -109,6 +147,8 @@ npm run dev
 | PUT | `/api/portfolio` | Update portfolio |
 | GET | `/api/portfolio/public/:slug` | Public portfolio view |
 
+> **AI not configured:** Grok API key is not set or quota is unavailable. Portfolio generation will use basic defaults instead of AI-generated content. To enable richer results add `GROK_API_KEY` to the backend and restart the server.
+
 ### Projects
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -139,12 +179,16 @@ ai-career-launchpad/
 │   │   ├── routes/
 │   │   │   └── index.js          # All API routes
 │   │   ├── services/
-│   │   │   ├── geminiService.js  # Gemini AI calls
+│   │   │   ├── grokService.js  # Grok AI calls
 │   │   │   └── githubService.js  # GitHub API calls
 │   │   └── index.js              # Express app entry
 │   ├── uploads/                  # Uploaded CVs
 │   ├── .env.example
 │   └── package.json
+├── frontend/
+│   ├── package.json
+│   ├── next.config.js
+│   └── src/                    # Next.js app (pages/app)
 ```
 
 ---
