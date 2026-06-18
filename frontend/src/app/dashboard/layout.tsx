@@ -12,6 +12,9 @@ import {
   LogOut,
   User,
   Loader2,
+  Palette,
+  Award,
+  BarChart3,
 } from 'lucide-react';
 
 const navItems = [
@@ -20,6 +23,9 @@ const navItems = [
   { href: '/dashboard/github', label: 'GitHub', icon: Github },
   { href: '/dashboard/projects', label: 'Projects', icon: FolderOpen },
   { href: '/dashboard/portfolio', label: 'Portfolio', icon: Globe },
+  { href: '/dashboard/customize', label: 'Customize', icon: Palette },
+  { href: '/dashboard/skills', label: 'Skills', icon: Award },
+  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

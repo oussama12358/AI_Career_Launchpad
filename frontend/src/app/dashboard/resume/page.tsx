@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, RefreshCw, Download } from 'lucide-react';
 
 interface Feedback {
   score: number;
@@ -25,6 +25,7 @@ export default function ResumePage() {
   const [resume, setResume] = useState<Resume | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [loading, setLoading] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -70,6 +71,29 @@ export default function ResumePage() {
     }
   };
 
+  const handleDownloadPDF = async (format: string = 'modern') => {
+    setDownloading(true);
+    try {
+      const response = await api.get(`/resume/download/${format}`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `resume_${format}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      toast.success('Resume downloaded successfully!');
+    } catch (err) {
+      console.error('Error downloading resume:', err);
+      toast.error('Failed to download resume');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const scoreColor = (score: number) =>
     score >= 80 ? 'text-green-600' : score >= 60 ? 'text-orange-500' : 'text-red-500';
 
@@ -110,22 +134,55 @@ export default function ResumePage() {
 
       {/* Current resume info */}
       {resume && (
-        <div className="card flex items-center gap-4">
-          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-            <FileText className="w-5 h-5 text-red-600" />
-          </div>
-          <div className="flex-1">
-            <p className="font-medium text-gray-900">{resume.file_name}</p>
-            <p className="text-sm text-gray-500">
-              Uploaded {new Date(resume.uploaded_at).toLocaleDateString()}
-            </p>
-          </div>
-          {typeof resume.score === 'number' && (
-            <div className={`px-3 py-1 rounded-full font-bold text-lg ${scoreBg(resume.score)} ${scoreColor(resume.score)}`}>
-              {resume.score}/100
+        <>
+          <div className="card flex items-center gap-4">
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <FileText className="w-5 h-5 text-red-600" />
             </div>
-          )}
-        </div>
+            <div className="flex-1">
+              <p className="font-medium text-gray-900">{resume.file_name}</p>
+              <p className="text-sm text-gray-500">
+                Uploaded {new Date(resume.uploaded_at).toLocaleDateString()}
+              </p>
+            </div>
+            {typeof resume.score === 'number' && (
+              <div className={`px-3 py-1 rounded-full font-bold text-lg ${scoreBg(resume.score)} ${scoreColor(resume.score)}`}>
+                {resume.score}/100
+              </div>
+            )}
+          </div>
+
+          {/* Download Options */}
+          <div className="card">
+            <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Download className="w-4 h-4" /> Download Resume
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                { format: 'modern', label: 'Modern Template', desc: 'Colorful and professional' },
+                { format: 'minimal', label: 'Minimal Template', desc: 'Clean and simple' },
+                { format: 'professional', label: 'Professional', desc: 'Formal and traditional' },
+              ].map(({ format, label, desc }) => (
+                <button
+                  key={format}
+                  onClick={() => handleDownloadPDF(format)}
+                  disabled={downloading}
+                  className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all text-left"
+                >
+                  <p className="font-medium text-gray-900 text-sm">{label}</p>
+                  <p className="text-xs text-gray-600 mt-1">{desc}</p>
+                  <div className="mt-2">
+                    {downloading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    ) : (
+                      <Download className="w-4 h-4 text-gray-400" />
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Skills */}

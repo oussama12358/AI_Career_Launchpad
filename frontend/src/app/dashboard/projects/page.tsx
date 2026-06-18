@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, RefreshCw, ExternalLink, Github, Loader2, X } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, ExternalLink, Github, Loader2, X, Star, Edit2 } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -12,17 +12,22 @@ interface Project {
   tech_stack: string[];
   github_url: string;
   live_url: string;
+  demo_url: string;
   stars: number;
   language: string;
   source: string;
+  image_url?: string;
+  is_featured: boolean;
+  featured_order?: number;
 }
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', description: '', tech_stack: '', github_url: '', live_url: '' });
+  const [form, setForm] = useState({ name: '', description: '', tech_stack: '', github_url: '', live_url: '', demo_url: '', image_url: '' });
   const [saving, setSaving] = useState(false);
 
   const fetchProjects = () => {
@@ -44,7 +49,8 @@ export default function ProjectsPage() {
       });
       toast.success('Project added with AI description!');
       setShowForm(false);
-      setForm({ name: '', description: '', tech_stack: '', github_url: '', live_url: '' });
+      setForm({ name: '', description: '', tech_stack: '', github_url: '', live_url: '', demo_url: '', image_url: '' });
+      setEditingId(null);
       fetchProjects();
     } catch {
       toast.error('Failed to add project');
@@ -66,10 +72,25 @@ export default function ProjectsPage() {
       const res = await api.post(`/projects/${id}/regenerate`);
       setProjects((prev) => prev.map((p) => (p.id === id ? res.data : p)));
       toast.success('Description regenerated!');
-    } catch {
-      toast.error('Failed to regenerate');
+      fetchProjects();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || 'Failed to regenerate');
     } finally {
       setRegeneratingId(null);
+    }
+  };
+
+  const handleToggleFeatured = async (project: Project) => {
+    try {
+      await api.put(`/projects/${project.id}/showcase`, {
+        is_featured: !project.is_featured,
+        image_url: project.image_url,
+        demo_url: project.demo_url,
+      });
+      toast.success(project.is_featured ? 'Removed from featured' : 'Added to featured!');
+      fetchProjects();
+    } catch {
+      toast.error('Failed to update project');
     }
   };
 
@@ -116,6 +137,14 @@ export default function ProjectsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Live URL</label>
                 <input className="input" placeholder="https://myapp.vercel.app" value={form.live_url} onChange={(e) => setForm({ ...form, live_url: e.target.value })} />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Demo Video URL</label>
+                <input className="input" placeholder="https://youtube.com/..." value={form.demo_url} onChange={(e) => setForm({ ...form, demo_url: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project Image URL</label>
+                <input className="input" placeholder="https://example.com/image.jpg" value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} />
+              </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowForm(false)} className="btn-secondary flex-1">Cancel</button>
                 <button type="submit" className="btn-primary flex-1" disabled={saving}>
@@ -135,71 +164,137 @@ export default function ProjectsPage() {
           <p className="text-gray-400 text-sm mt-1">Connect GitHub to import automatically, or add manually</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {projects.map((project) => (
-            <div key={project.id} className="card">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900">{project.name}</h3>
-                    {project.source === 'github' && (
-                      <span className="badge bg-gray-100 text-gray-600 flex items-center gap-1">
-                        <Github className="w-3 h-3" /> GitHub
-                      </span>
+        <>
+          {/* Featured Projects */}
+          {projects.filter((p) => p.is_featured).length > 0 && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                  <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                  Featured Projects
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {projects.filter((p) => p.is_featured).map((project) => (
+                  <div key={project.id} className="card border-2 border-yellow-200 bg-yellow-50">
+                    {project.image_url && (
+                      <img
+                        src={project.image_url}
+                        alt={project.name}
+                        className="w-full h-40 object-cover rounded-lg mb-3"
+                      />
                     )}
-                    {project.language && (
-                      <span className="badge bg-blue-100 text-blue-700">{project.language}</span>
-                    )}
-                  </div>
-
-                  {project.ai_description && (
-                    <p className="text-sm text-gray-600 leading-relaxed mb-2">{project.ai_description}</p>
-                  )}
-
-                  {project.tech_stack?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {project.tech_stack.map((t) => (
-                        <span key={t} className="badge bg-purple-100 text-purple-700">{t}</span>
-                      ))}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-semibold text-gray-900">{project.name}</h3>
+                      <Star
+                        className="w-5 h-5 text-yellow-500 fill-yellow-500 cursor-pointer flex-shrink-0"
+                        onClick={() => handleToggleFeatured(project)}
+                      />
                     </div>
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    {project.github_url && (
-                      <a href={project.github_url} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                        <Github className="w-3 h-3" /> GitHub
-                      </a>
+                    {(project.ai_description || project.description) && (
+                      <p className="text-sm text-gray-600 mb-2">{project.ai_description || project.description}</p>
                     )}
-                    {project.live_url && (
-                      <a href={project.live_url} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                        <ExternalLink className="w-3 h-3" /> Live Demo
-                      </a>
+                    {project.tech_stack?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {project.tech_stack.map((t) => (
+                          <span key={t} className="badge bg-purple-100 text-purple-700 text-xs">{t}</span>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => handleRegenerate(project.id)}
-                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Regenerate AI description"
-                    disabled={regeneratingId === project.id}
-                  >
-                    <RefreshCw className={`w-4 h-4 ${regeneratingId === project.id ? 'animate-spin' : ''}`} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(project.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* All Projects */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">All Projects ({projects.length})</h2>
+            {projects.map((project) => (
+              <div key={project.id} className="card">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900">{project.name}</h3>
+                      {project.source === 'github' && (
+                        <span className="badge bg-gray-100 text-gray-600 flex items-center gap-1">
+                          <Github className="w-3 h-3" /> GitHub
+                        </span>
+                      )}
+                      {project.language && (
+                        <span className="badge bg-blue-100 text-blue-700">{project.language}</span>
+                      )}
+                      {project.is_featured && (
+                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" title="Featured project" />
+                      )}
+                    </div>
+
+                    {(project.ai_description || project.description) && (
+                      <p className="text-sm text-gray-600 leading-relaxed mb-2">{project.ai_description || project.description}</p>
+                    )}
+
+                    {project.tech_stack?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {project.tech_stack.map((t) => (
+                          <span key={t} className="badge bg-purple-100 text-purple-700">{t}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3">
+                      {project.github_url && (
+                        <a href={project.github_url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                          <Github className="w-3 h-3" /> GitHub
+                        </a>
+                      )}
+                      {project.live_url && (
+                        <a href={project.live_url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" /> Live Demo
+                        </a>
+                      )}
+                      {project.demo_url && (
+                        <a href={project.demo_url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" /> Video
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleToggleFeatured(project)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        project.is_featured
+                          ? 'text-yellow-500 hover:bg-yellow-50'
+                          : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'
+                      }`}
+                      title={project.is_featured ? 'Unfeature' : 'Feature this project'}
+                    >
+                      <Star className={`w-4 h-4 ${project.is_featured ? 'fill-yellow-500' : ''}`} />
+                    </button>
+                    <button
+                      onClick={() => handleRegenerate(project.id)}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Regenerate AI description"
+                      disabled={regeneratingId === project.id}
+                    >
+                      <RefreshCw className={`w-4 h-4 ${regeneratingId === project.id ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(project.id)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

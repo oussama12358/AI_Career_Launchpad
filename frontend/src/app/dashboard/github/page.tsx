@@ -37,7 +37,12 @@ export default function GitHubPage() {
     if (!username.trim()) return;
     setConnecting(true);
     try {
-      const res = await api.post('/github/connect', { username: username.trim() });
+      // Extract username from URL if needed (e.g., https://github.com/user -> user)
+      let extractedUsername = username.trim();
+      if (extractedUsername.includes('github.com/')) {
+        extractedUsername = extractedUsername.split('github.com/').pop()?.split('/')[0] || extractedUsername;
+      }
+      const res = await api.post('/github/connect', { username: extractedUsername });
       toast.success(`Connected! Found ${res.data.repoCount} repositories`);
       // Refresh profile
       const profileRes = await api.get('/github');

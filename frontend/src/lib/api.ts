@@ -15,10 +15,27 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
+    // Enhanced logging for debugging failed requests
+    try {
+      const { config, response } = err;
+      const method = config?.method?.toUpperCase() || 'UNKNOWN';
+      const base = config?.baseURL ?? '';
+      const url = config?.url ? `${base}${config.url}` : base || 'unknown-url';
+      const status = response?.status;
+      const data = response?.data;
+      const isNetworkError = err?.message === 'Network Error' || status === undefined;
+      const message = data || err.message || err;
+      // eslint-disable-next-line no-console
+      console.warn(`API ${isNetworkError ? 'Warning' : 'Error'}: ${method} ${url} -> ${status || 'Network Error'}`, message);
+    } catch (e) {
+      // ignore logging failures
+    }
+
     if (err.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('token');
       window.location.href = '/auth/login';
     }
+
     return Promise.reject(err);
   }
 );
