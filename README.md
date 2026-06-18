@@ -1,163 +1,191 @@
 # AI Career Launchpad
-This repository contains the full-stack AI Career Launchpad project (backend API + Next.js frontend).
 
-## Notes
-- This repo includes both the backend API and the frontend Next.js app.
-- Use this repo to run the Express API, database schema, frontend app, and AI / GitHub integrations.
+Full-stack AI Career Launchpad project with a Next.js frontend and an Express backend.
 
-## Features
+## What it does
 
-- **User Authentication** — JWT-based register/login
-- **CV Upload & Analysis** — PDF parsing + AI feedback & scoring via Grok
-- **GitHub Integration** — Auto-import projects with AI-generated descriptions
-- **Portfolio Generation** — AI-built portfolio
-- **Skills Dashboard** — Detect skills from your CV and GitHub
-- **Interview Prep** — AI-generated interview questions
+- User registration and login with JWT authentication
+- Resume PDF upload, parsing, and AI-based feedback
+- GitHub profile integration for importing projects and skills
+- AI-powered portfolio generation and customization
+- Skills dashboard with endorsements and interview prep
+- Project showcase management and analytics tracking
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | Node.js, Express.js |
-| Database | PostgreSQL |
-| AI | Grok AI |
-| Auth | JWT |
+- Backend: Node.js, Express, PostgreSQL
+- Frontend: Next.js, React, TypeScript, Tailwind CSS
+- AI: Grok AI service integration
+- Auth: JWT
+- File uploads: Multer
+- PDF tools: pdf-parse, pdfkit
 
----
-
-## Frontend
-
-- Framework: Next.js 16 (React)
-- Styling: Tailwind CSS
-- Frontend communicates with backend via `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:5000/api`)
-
-
-## Setup Instructions
-
-### Prerequisites
+## Prerequisites
 
 - Node.js 18+
 - PostgreSQL 14+
-- Grok API Key (obtain from your Grok provider)
+- Grok API key (for AI features)
 
----
+## Backend Setup
 
-### 1. Database Setup
-
-```sql
--- Create the database
-CREATE DATABASE ai_career_launchpad;
-
--- Connect and run the schema
-\c ai_career_launchpad
-\i backend/src/config/schema.sql
-```
-
----
-
-### 2. Backend Setup
+1. Open a terminal and go to the backend folder:
 
 ```bash
 cd backend
-
-# Install dependencies
-npm install
-
-# Create environment file
-cp .env.example .env
-# Edit .env and fill in your values:
-#   DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/ai_career_launchpad
-#   JWT_SECRET=your_random_secret_here
-#   GROK_API_KEY=your_grok_api_key_here
-
-# Start development server
-npm run dev
-# Server runs on http://localhost:5000
 ```
 
----
+2. Install dependencies:
 
-### Frontend Setup
+```bash
+npm install
+```
+
+3. Create the environment file and update values:
+
+```bash
+copy .env.example .env
+```
+
+Fill in:
+
+- `DATABASE_URL` with your PostgreSQL connection string
+- `JWT_SECRET` with a secret phrase
+- `GROK_API_KEY` with your Grok key
+- `FRONTEND_URL` if using a different frontend host
+
+4. Run the backend in development mode:
+
+```bash
+npm run dev
+```
+
+The backend listens on `http://localhost:5000` by default.
+
+## Frontend Setup
+
+1. Open a second terminal and go to the frontend folder:
 
 ```bash
 cd frontend
-
-# Install dependencies
-npm install
-
-# Create environment file for Next.js (optional)
-# Create a file named `.env.local` in the `frontend` folder and add:
-#   NEXT_PUBLIC_API_URL=http://localhost:5000/api
-
-# Start frontend dev server
-npm run dev
-# Frontend runs on http://localhost:3000
 ```
 
-### Running Backend + Frontend Locally
-
-Open two terminals and run the backend and frontend servers:
+2. Install dependencies:
 
 ```bash
-# Terminal 1 - backend
+npm install
+```
+
+3. Optionally create `.env.local` with:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+```
+
+4. Start the frontend:
+
+```bash
+npm run dev
+```
+
+The frontend runs on `http://localhost:3000`.
+
+## Running Locally
+
+Run both servers in separate terminals:
+
+```bash
+# Terminal 1
 cd backend
 npm run dev
 
-# Terminal 2 - frontend
+# Terminal 2
 cd frontend
 npm run dev
 ```
 
-When both are running, the frontend will call the backend at `http://localhost:5000/api` by default. Adjust `NEXT_PUBLIC_API_URL` if your backend runs elsewhere.
+Then open `http://localhost:3000`.
 
+## Environment Variables
 
-## Getting a Grok API Key
+Backend `.env` settings:
 
-1. Obtain a Grok API key from your Grok provider or account dashboard.
-2. Copy the key and paste it into `backend/.env` as `GROK_API_KEY`
+- `PORT` (default `5000`)
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN`
+- `GROK_API_KEY`
+- `GITHUB_TOKEN` (optional, for higher GitHub API rate limits)
+- `FRONTEND_URL`
 
----
+Frontend `.env.local` settings:
+
+- `NEXT_PUBLIC_API_URL=http://localhost:5000/api`
 
 ## API Endpoints
 
-### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login |
-| GET | `/api/auth/me` | Get current user |
+### Authentication
+
+- `POST /api/auth/register` — Register new user
+- `POST /api/auth/login` — Login
+- `GET /api/auth/me` — Get current user
 
 ### Resume
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/resume/upload` | Upload PDF + AI analysis |
-| GET | `/api/resume` | Get resume & feedback |
+
+- `POST /api/resume/upload` — Upload resume PDF and analyze
+- `GET /api/resume` — Retrieve resume data and feedback
+- `GET /api/resume/download/:format` — Download generated resume PDF
 
 ### GitHub
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/github/connect` | Connect GitHub username |
-| GET | `/api/github` | Get GitHub profile |
+
+- `POST /api/github/connect` — Connect GitHub username
+- `GET /api/github` — Get GitHub profile data
 
 ### Portfolio
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/portfolio/generate` | Generate AI portfolio |
-| GET | `/api/portfolio` | Get portfolio |
-| PUT | `/api/portfolio` | Update portfolio |
-| GET | `/api/portfolio/public/:slug` | Public portfolio view |
 
-> **AI not configured:** Grok API key is not set or quota is unavailable. Portfolio generation will use basic defaults instead of AI-generated content. To enable richer results add `GROK_API_KEY` to the backend and restart the server.
+- `POST /api/portfolio/generate` — Generate AI portfolio
+- `GET /api/portfolio` — Get portfolio
+- `PUT /api/portfolio` — Update portfolio
+- `GET /api/portfolio/public/:slug` — Public portfolio view
 
 ### Projects
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/projects` | List all projects |
-| POST | `/api/projects` | Add project + AI desc |
-| DELETE | `/api/projects/:id` | Delete project |
-| POST | `/api/projects/:id/regenerate` | Regenerate AI description |
 
----
+- `GET /api/projects` — List projects
+- `POST /api/projects` — Create project with AI description
+- `DELETE /api/projects/:id` — Remove project
+- `POST /api/projects/:id/regenerate` — Regenerate AI project description
+
+### Customization & Skills
+
+- `GET /api/customization/themes` — Get available themes
+- `GET /api/customization/:portfolioId` — Get portfolio customization
+- `PUT /api/customization/:portfolioId` — Update customization
+- `GET /api/skills` — Get user skills
+- `POST /api/skills` — Add new skill
+- `PUT /api/skills/:skillId` — Update skill proficiency
+- `DELETE /api/skills/:skillId` — Delete skill
+- `POST /api/skills/:skillId/endorse` — Endorse skill
+- `DELETE /api/skills/:skillId/endorse` — Remove endorsement
+
+### Analytics & Sharing
+
+- `GET /api/analytics/:portfolioId` — Get analytics
+- `POST /api/analytics/:portfolioId/track` — Track portfolio view
+- `POST /api/analytics/:portfolioId/share` — Create share link
+- `GET /api/analytics/:portfolioId/shares` — List share links
+- `DELETE /api/analytics/share/:shareId` — Delete share link
+
+## Database Schema
+
+The project stores:
+
+- `users`
+- `resumes`
+- `github_profiles`
+- `projects`
+- `portfolios`
+- `skills`
+
+Schema SQL is located in `backend/src/config/schema.sql`.
 
 ## Project Structure
 
@@ -166,46 +194,30 @@ ai-career-launchpad/
 ├── backend/
 │   ├── src/
 │   │   ├── config/
-│   │   │   ├── database.js       # PostgreSQL pool
-│   │   │   └── schema.sql        # DB schema
 │   │   ├── controllers/
-│   │   │   ├── authController.js
-│   │   │   ├── resumeController.js
-│   │   │   ├── githubController.js
-│   │   │   ├── portfolioController.js
-│   │   │   └── projectController.js
 │   │   ├── middleware/
-│   │   │   └── auth.js           # JWT middleware
 │   │   ├── routes/
-│   │   │   └── index.js          # All API routes
 │   │   ├── services/
-│   │   │   ├── grokService.js  # Grok AI calls
-│   │   │   └── githubService.js  # GitHub API calls
-│   │   └── index.js              # Express app entry
-│   ├── uploads/                  # Uploaded CVs
+│   │   └── index.js
+│   ├── uploads/
 │   ├── .env.example
 │   └── package.json
 ├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   └── lib/
 │   ├── package.json
-│   ├── next.config.js
-│   └── src/                    # Next.js app (pages/app)
+│   └── tsconfig.json
+└── README.md
 ```
 
----
+## Notes
 
-## Database Schema
-
-The PostgreSQL schema includes 6 tables:
-
-- **users** — Account data
-- **resumes** — CV files, parsed text, AI feedback
-- **github_profiles** — GitHub profile & repos cache
-- **projects** — Projects (from GitHub or manual)
-- **portfolios** — Generated portfolio data
-- **skill_assessments** — Skill gap & interview questions
-
----
+- The frontend uses `NEXT_PUBLIC_API_URL` to call the backend API.
+- Resume upload only accepts PDF files.
+- GitHub integration supports public profiles by default.
 
 ## Author
 
--Oussama
+- Oussama
+
