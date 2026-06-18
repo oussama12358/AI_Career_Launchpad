@@ -10,6 +10,11 @@ import * as resumeController from '../controllers/resumeController.js';
 import * as githubController from '../controllers/githubController.js';
 import * as portfolioController from '../controllers/portfolioController.js';
 import * as projectController from '../controllers/projectController.js';
+import * as customizationController from '../controllers/customizationController.js';
+import * as skillsController from '../controllers/skillsController.js';
+import * as analyticsController from '../controllers/analyticsController.js';
+import * as projectShowcaseController from '../controllers/projectShowcaseController.js';
+import { generateResumePDF } from '../services/resumePdfService.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -70,5 +75,43 @@ router.get('/projects', authMiddleware, projectController.getProjects);
 router.post('/projects', authMiddleware, projectController.createProject);
 router.delete('/projects/:id', authMiddleware, projectController.deleteProject);
 router.post('/projects/:id/regenerate', authMiddleware, projectController.regenerateDescription);
+
+// ── Portfolio Customization routes ────────────────────────────
+router.get('/customization/themes', customizationController.getThemes);
+router.get('/customization/:portfolioId', authMiddleware, customizationController.getCustomization);
+router.put('/customization/:portfolioId', authMiddleware, customizationController.updateCustomization);
+
+// ── Skills Management routes ──────────────────────────────────
+router.get('/skills', authMiddleware, skillsController.getUserSkills);
+router.post('/skills', authMiddleware, skillsController.addSkill);
+router.put('/skills/:skillId', authMiddleware, skillsController.updateSkillProficiency);
+router.delete('/skills/:skillId', authMiddleware, skillsController.deleteSkill);
+router.post('/skills/:skillId/endorse', authMiddleware, skillsController.endorseSkill);
+router.delete('/skills/:skillId/endorse', authMiddleware, skillsController.removeEndorsement);
+
+// ── Project Showcase routes ───────────────────────────────────
+router.put('/projects/:projectId/showcase', authMiddleware, projectShowcaseController.updateProjectShowcase);
+router.get('/projects/featured', authMiddleware, projectShowcaseController.getFeaturedProjects);
+router.post('/projects/featured/reorder', authMiddleware, projectShowcaseController.reorderFeaturedProjects);
+
+// ── Portfolio Analytics & Sharing routes ──────────────────────
+router.get('/analytics/:portfolioId', authMiddleware, analyticsController.getAnalytics);
+router.post('/analytics/:portfolioId/track', analyticsController.trackView);
+router.post('/analytics/:portfolioId/share', authMiddleware, analyticsController.createShareLink);
+router.get('/analytics/:portfolioId/shares', authMiddleware, analyticsController.getShareLinks);
+router.delete('/analytics/share/:shareId', authMiddleware, analyticsController.deleteShareLink);
+
+// ── Resume PDF Export route ───────────────────────────────────
+router.get('/resume/download/:format', authMiddleware, async (req, res) => {
+  try {
+    const pdfBuffer = await generateResumePDF(req.user.id, req.params.format || 'modern');
+    res.contentType('application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="resume_${Date.now()}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Error downloading resume:', err);
+    res.status(500).json({ error: 'Failed to generate resume PDF' });
+  }
+});
 
 export default router;

@@ -1,6 +1,8 @@
 import pool from '../config/database.js';
 import * as grok from '../services/grokService.js';
 
+const isValidUuid = (value) => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
 // GET /api/projects
 const getProjects = async (req, res) => {
   try {
@@ -47,6 +49,10 @@ const deleteProject = async (req, res) => {
 // POST /api/projects/:id/regenerate
 const regenerateDescription = async (req, res) => {
   try {
+    if (!isValidUuid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+
     const result = await pool.query(
       'SELECT * FROM projects WHERE id = $1 AND user_id = $2',
       [req.params.id, req.user.id]
@@ -56,7 +62,7 @@ const regenerateDescription = async (req, res) => {
     const project = result.rows[0];
     const aiDesc = await grok.generateProjectDescription(
       project.name,
-      project.tech_stack || [],
+      Array.isArray(project.tech_stack) ? project.tech_stack : [],
       project.description || ''
     );
 
@@ -66,7 +72,8 @@ const regenerateDescription = async (req, res) => {
     );
     res.json(updated.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error regenerating project description:', err);
+    res.status(500).json({ error: err?.message || 'Server error' });
   }
 };
 
