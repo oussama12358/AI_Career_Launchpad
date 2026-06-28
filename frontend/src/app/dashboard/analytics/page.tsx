@@ -14,6 +14,7 @@ import {
   Mail,
   Facebook,
   Twitter,
+  Linkedin,
 } from 'lucide-react';
 
 interface Analytics {
@@ -75,17 +76,63 @@ export default function PortfolioAnalyticsPage() {
     loadData();
   }, []);
 
+  const buildShareIntent = (method: string, url: string) => {
+    const encodedUrl = encodeURIComponent(url);
+
+    switch (method) {
+      case 'email':
+        return `mailto:?subject=${encodeURIComponent('Check out my portfolio')}&body=${encodeURIComponent(`View my portfolio here: ${url}`)}`;
+      case 'twitter':
+        return `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my portfolio')}&url=${encodedUrl}`;
+      case 'facebook':
+        return `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+      case 'linkedin':
+        return `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+      default:
+        return url;
+    }
+  };
+
+  const openShareIntent = (method: string, url: string, popup: Window | null) => {
+    const intentUrl = buildShareIntent(method, url);
+
+    if (method === 'email') {
+      window.location.href = intentUrl;
+      return;
+    }
+
+    if (popup && !popup.closed) {
+      popup.opener = null;
+      popup.location.href = intentUrl;
+      return;
+    }
+
+    window.open(intentUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const handleCreateShare = async (method: string, via?: string) => {
+    if (!portfolioId || !portfolioUrl) {
+      toast.error('Portfolio is still loading. Please wait a moment.');
+      return;
+    }
+
+    const popup = method === 'email' ? null : window.open('', '_blank');
     setCreating(true);
+
     try {
       const res = await api.post(`/analytics/${portfolioId}/share`, {
         share_method: method,
         shared_via: via,
       });
-      setShareLinks([...shareLinks, res.data]);
+
+      const shareUrl = `${portfolioUrl}?share=${res.data.share_token}`;
+      setShareLinks((current) => [...current, res.data]);
+
+      openShareIntent(method, shareUrl, popup);
       toast.success(`Share link created via ${method}!`);
     } catch (err) {
-      toast.error('Failed to create share link');
+      openShareIntent(method, portfolioUrl, popup);
+      toast.error('Could not track this share, but the platform was opened.');
     } finally {
       setCreating(false);
     }
@@ -182,7 +229,7 @@ export default function PortfolioAnalyticsPage() {
             { method: 'email', label: 'Email', icon: Mail, color: 'bg-blue-100 hover:bg-blue-200' },
             { method: 'twitter', label: 'Twitter', icon: Twitter, color: 'bg-sky-100 hover:bg-sky-200' },
             { method: 'facebook', label: 'Facebook', icon: Facebook, color: 'bg-blue-100 hover:bg-blue-200' },
-            { method: 'linkedin', label: 'LinkedIn', icon: Share2, color: 'bg-orange-100 hover:bg-orange-200' },
+            { method: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'bg-orange-100 hover:bg-orange-200' },
           ].map(({ method, label, icon: Icon, color }) => (
             <button
               key={method}
